@@ -1,0 +1,639 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Number System Converter</title>
+<style>
+  :root {
+    --bg: #eef2fb;
+    --surface: #ffffff;
+    --surface-alt: #f4f7fd;
+    --border: #dce3f2;
+    --text: #14213a;
+    --text-muted: #5c6b8a;
+    --accent: #5088f2;
+    --accent-hover: #3d72e0;
+    --accent-soft: #eaf1ff;
+    --accent-soft-strong: #d7e6ff;
+    --error: #d63b2f;
+    --error-soft: #fbe9e7;
+    --shadow: 0 2px 8px rgba(20, 33, 58, 0.06);
+    --shadow-lg: 0 8px 24px rgba(20, 33, 58, 0.10);
+    --radius: 12px;
+  }
+
+  /* Higher-contrast dark theme: deeper background, brighter text and accent */
+  [data-theme="dark"] {
+    --bg: #070b14;
+    --surface: #121a2c;
+    --surface-alt: #1b2540;
+    --border: #37456b;
+    --text: #f6f8ff;
+    --text-muted: #aab6d9;
+    --accent: #7ea4ff;
+    --accent-hover: #9bb9ff;
+    --accent-soft: #1e2a4a;
+    --accent-soft-strong: #2a3a63;
+    --error: #ff9186;
+    --error-soft: #3d211f;
+    --shadow: 0 2px 10px rgba(0, 0, 0, 0.5);
+    --shadow-lg: 0 10px 30px rgba(0, 0, 0, 0.6);
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    font-family: 'Segoe UI', Roboto, -apple-system, BlinkMacSystemFont, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    transition: background 0.25s ease, color 0.25s ease;
+    padding-bottom: 60px;
+  }
+
+  header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 28px 24px 14px;
+    max-width: 960px;
+    margin: 0 auto;
+  }
+
+  .brand {
+    display: flex;
+    flex-direction: column;
+  }
+
+  header h1 {
+    font-size: 1.28rem;
+    margin: 0;
+    font-weight: 700;
+    letter-spacing: -0.2px;
+  }
+
+  header p {
+    margin: 2px 0 0;
+    color: var(--text-muted);
+    font-size: 0.83rem;
+  }
+
+  .theme-toggle {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    width: 40px;
+    height: 40px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: var(--shadow);
+    transition: border-color 0.15s ease;
+    flex-shrink: 0;
+  }
+  .theme-toggle:hover { border-color: var(--accent); }
+  .theme-toggle svg { width: 18px; height: 18px; stroke: var(--accent); }
+
+  main {
+    max-width: 960px;
+    margin: 0 auto;
+    padding: 6px 24px 0;
+  }
+
+  .toolbar {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    margin-bottom: 16px;
+  }
+
+  button {
+    cursor: pointer;
+    border: none;
+    border-radius: 9px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    padding: 9px 15px;
+    font-family: inherit;
+    transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+  }
+  button:disabled { opacity: 0.4; cursor: not-allowed; }
+
+  .btn-ghost {
+    background: var(--surface);
+    color: var(--text-muted);
+    border: 1px solid var(--border);
+  }
+  .btn-ghost:hover:not(:disabled) { color: var(--accent); border-color: var(--accent); }
+
+  #inputsContainer {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+  }
+
+  .input-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    padding: 18px 20px;
+    transition: box-shadow 0.2s ease;
+  }
+  .input-card:hover { box-shadow: var(--shadow-lg); }
+
+  .input-card.card-enter {
+    animation: cardEnter 0.28s ease;
+  }
+  @keyframes cardEnter {
+    from { opacity: 0; transform: translateY(-8px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .input-card-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 14px;
+  }
+
+  .badge-group {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .index-circle {
+    width: 26px;
+    height: 26px;
+    border-radius: 50%;
+    background: var(--accent-soft-strong);
+    color: var(--accent);
+    font-weight: 700;
+    font-size: 0.78rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+
+  .badge-label {
+    font-weight: 600;
+    font-size: 0.9rem;
+    color: var(--text);
+  }
+
+  .remove-btn {
+    background: transparent;
+    border: 1px solid var(--border);
+    color: var(--text-muted);
+    width: 28px;
+    height: 28px;
+    border-radius: 8px;
+    padding: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .remove-btn svg { width: 14px; height: 14px; }
+  .remove-btn:hover:not(:disabled) {
+    color: var(--error);
+    border-color: var(--error);
+  }
+
+  .input-row {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    margin-bottom: 8px;
+  }
+
+  /* Segmented base selector, monochrome blue */
+  .segmented {
+    display: inline-flex;
+    background: var(--surface-alt);
+    border: 1px solid var(--border);
+    border-radius: 9px;
+    padding: 3px;
+    gap: 2px;
+    flex-shrink: 0;
+  }
+
+  .seg-btn {
+    background: transparent;
+    border: none;
+    color: var(--text-muted);
+    font-size: 0.76rem;
+    font-weight: 700;
+    letter-spacing: 0.3px;
+    padding: 8px 13px;
+    border-radius: 6px;
+  }
+
+  .seg-btn.active {
+    background: var(--accent);
+    color: #fff;
+  }
+
+  .seg-btn:not(.active):hover { color: var(--accent); }
+
+  input[type="text"] {
+    background: var(--surface-alt);
+    border: 1px solid var(--border);
+    color: var(--text);
+    padding: 10px 13px;
+    border-radius: 9px;
+    font-size: 0.95rem;
+    font-family: 'Consolas', 'Courier New', monospace;
+    outline: none;
+    transition: border-color 0.15s ease, box-shadow 0.15s ease;
+    flex: 1;
+    min-width: 180px;
+  }
+
+  input[type="text"]::placeholder {
+    font-family: 'Segoe UI', Roboto, -apple-system, BlinkMacSystemFont, sans-serif;
+    font-weight: 400;
+    color: var(--text-muted);
+    opacity: 1;
+  }
+
+  input[type="text"]:focus {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px var(--accent-soft-strong);
+  }
+
+  input.invalid {
+    border-color: var(--error);
+    box-shadow: 0 0 0 3px var(--error-soft);
+  }
+
+  .error-msg {
+    color: var(--error);
+    font-size: 0.79rem;
+    min-height: 17px;
+    margin-bottom: 4px;
+    font-weight: 500;
+  }
+
+  /* Structured 2-column results, uniform blue treatment */
+  .results-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+    margin-top: 10px;
+  }
+
+  .result-item {
+    background: var(--surface-alt);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 9px 12px;
+    cursor: pointer;
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    min-height: 40px;
+    transition: border-color 0.15s ease;
+  }
+
+  .result-item:hover { border-color: var(--accent); }
+
+  .result-item .label {
+    font-size: 0.67rem;
+    text-transform: uppercase;
+    letter-spacing: 0.6px;
+    color: var(--text-muted);
+    font-weight: 700;
+    flex-shrink: 0;
+  }
+
+  .result-item .value {
+    font-family: 'Consolas', 'Courier New', monospace;
+    font-size: 0.9rem;
+    font-weight: 600;
+    word-break: break-all;
+    text-align: right;
+    color: var(--accent);
+  }
+
+  .result-item .copied-tag {
+    position: absolute;
+    top: -9px;
+    right: 8px;
+    background: var(--accent);
+    color: #fff;
+    font-size: 0.6rem;
+    font-weight: 700;
+    padding: 1px 6px;
+    border-radius: 4px;
+    opacity: 0;
+    transition: opacity 0.2s ease;
+  }
+  .result-item .copied-tag.show { opacity: 1; }
+
+  .add-input-btn {
+    width: 100%;
+    background: var(--surface);
+    border: 1.5px dashed var(--border);
+    color: var(--text-muted);
+    border-radius: var(--radius);
+    padding: 14px;
+    font-size: 0.9rem;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    margin-top: 4px;
+  }
+  .add-input-btn svg { width: 16px; height: 16px; }
+  .add-input-btn:hover {
+    border-color: var(--accent);
+    color: var(--accent);
+    background: var(--accent-soft);
+  }
+
+  @media (max-width: 560px) {
+    header { padding: 22px 16px 10px; }
+    header h1 { font-size: 1.1rem; }
+    main { padding: 6px 16px 0; }
+    input[type="text"] { min-width: 100%; }
+    .results-grid { grid-template-columns: 1fr; }
+    .segmented { width: 100%; justify-content: space-between; }
+    .seg-btn { flex: 1; padding: 8px 4px; text-align: center; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="brand">
+    <h1>Number System Converter</h1>
+    <p>Binary &middot; Octal &middot; Decimal &middot; Hexadecimal</p>
+  </div>
+  <button class="theme-toggle" id="themeToggle" title="Toggle light / dark mode">
+    <svg id="themeIcon" viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></svg>
+  </button>
+</header>
+
+<main>
+  <div class="toolbar">
+    <button class="btn-ghost" id="clearBtn">Clear Values</button>
+  </div>
+
+  <div id="inputsContainer"></div>
+
+  <button class="add-input-btn" id="addBtn">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
+      <line x1="12" y1="5" x2="12" y2="19"></line>
+      <line x1="5" y1="12" x2="19" y2="12"></line>
+    </svg>
+    Add Input
+  </button>
+</main>
+
+
+<script>
+(function () {
+  "use strict";
+
+  const DIGITS = "0123456789ABCDEF";
+  const BASE_INFO = {
+    2:  { name: "Binary",      pattern: /^-?[01]+$/i },
+    8:  { name: "Octal",       pattern: /^-?[0-7]+$/i },
+    10: { name: "Decimal",     pattern: /^-?[0-9]+$/i },
+    16: { name: "Hexadecimal", pattern: /^-?[0-9A-Fa-f]+$/i }
+  };
+  const MIN_INPUTS = 3;
+
+  const container = document.getElementById("inputsContainer");
+  const addBtn = document.getElementById("addBtn");
+  const clearBtn = document.getElementById("clearBtn");
+  const themeToggle = document.getElementById("themeToggle");
+  const themeIcon = document.getElementById("themeIcon");
+
+  const SUN_PATH = '<circle cx="12" cy="12" r="4.5"></circle><line x1="12" y1="1.5" x2="12" y2="4"></line><line x1="12" y1="20" x2="12" y2="22.5"></line><line x1="4.2" y1="4.2" x2="6" y2="6"></line><line x1="18" y1="18" x2="19.8" y2="19.8"></line><line x1="1.5" y1="12" x2="4" y2="12"></line><line x1="20" y1="12" x2="22.5" y2="12"></line><line x1="4.2" y1="19.8" x2="6" y2="18"></line><line x1="18" y1="6" x2="19.8" y2="4.2"></line>';
+  const MOON_PATH = '<path d="M20 14.5A8.5 8.5 0 1 1 9.5 4a7 7 0 0 0 10.5 10.5z"></path>';
+
+  // ---------- Theme ----------
+  function applyTheme(theme) {
+    document.documentElement.setAttribute("data-theme", theme);
+    themeIcon.innerHTML = theme === "dark" ? SUN_PATH : MOON_PATH;
+  }
+  const prefersDark = window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches;
+  applyTheme(prefersDark ? "dark" : "light");
+
+  themeToggle.addEventListener("click", function () {
+    const current = document.documentElement.getAttribute("data-theme");
+    applyTheme(current === "dark" ? "light" : "dark");
+  });
+
+  // ---------- Base conversion helpers (BigInt-safe, arbitrary precision) ----------
+  function baseStringToBigInt(rawValue, base) {
+    let str = rawValue.trim();
+    let negative = false;
+    if (str.startsWith("-")) {
+      negative = true;
+      str = str.slice(1);
+    }
+    let result = 0n;
+    const bigBase = BigInt(base);
+    for (const ch of str) {
+      const digitVal = DIGITS.indexOf(ch.toUpperCase());
+      result = result * bigBase + BigInt(digitVal);
+    }
+    return negative ? -result : result;
+  }
+
+  function bigIntToBaseString(value, base) {
+    if (value === 0n) return "0";
+    let negative = value < 0n;
+    let n = negative ? -value : value;
+    const bigBase = BigInt(base);
+    let out = "";
+    while (n > 0n) {
+      const rem = n % bigBase;
+      out = DIGITS[Number(rem)] + out;
+      n = n / bigBase;
+    }
+    return negative ? "-" + out : out;
+  }
+
+  function validateInput(rawValue, base) {
+    const str = rawValue.trim();
+    if (str === "") return { valid: false, message: "" };
+    if (!BASE_INFO[base].pattern.test(str)) {
+      return {
+        valid: false,
+        message: "Invalid " + BASE_INFO[base].name + " number. Allowed digits: " + allowedDigitsLabel(base) + "."
+      };
+    }
+    return { valid: true, message: "" };
+  }
+
+  function allowedDigitsLabel(base) {
+    if (base === 2) return "0-1";
+    if (base === 8) return "0-7";
+    if (base === 10) return "0-9";
+    if (base === 16) return "0-9, A-F";
+    return "";
+  }
+
+  // ---------- Row rendering ----------
+  function createRow() {
+    const card = document.createElement("div");
+    card.className = "input-card";
+
+    card.innerHTML =
+      '<div class="input-card-header">' +
+        '<div class="badge-group">' +
+          '<span class="index-circle">1</span>' +
+          '<span class="badge-label">Input</span>' +
+        '</div>' +
+        '<button class="remove-btn" title="Remove this input">' +
+          '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">' +
+            '<line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line>' +
+          '</svg>' +
+        '</button>' +
+      '</div>' +
+      '<div class="input-row">' +
+        '<div class="segmented" data-base="10">' +
+          '<button type="button" class="seg-btn" data-base="2">BIN</button>' +
+          '<button type="button" class="seg-btn" data-base="8">OCT</button>' +
+          '<button type="button" class="seg-btn active" data-base="10">DEC</button>' +
+          '<button type="button" class="seg-btn" data-base="16">HEX</button>' +
+        '</div>' +
+        '<input type="text" class="value-input" placeholder="Enter a value...">' +
+      '</div>' +
+      '<div class="error-msg"></div>' +
+      '<div class="results-grid">' +
+        resultItem("2", "Binary") +
+        resultItem("8", "Octal") +
+        resultItem("10", "Decimal") +
+        resultItem("16", "Hexadecimal") +
+      '</div>';
+
+    return card;
+  }
+
+  function resultItem(base, label) {
+    return '<div class="result-item" data-base="' + base + '">' +
+             '<span class="copied-tag">Copied</span>' +
+             '<span class="label">' + label + '</span>' +
+             '<span class="value"></span>' +
+           '</div>';
+  }
+
+  function updateRow(card) {
+    const segmented = card.querySelector(".segmented");
+    const input = card.querySelector(".value-input");
+    const errorEl = card.querySelector(".error-msg");
+    const base = parseInt(segmented.dataset.base, 10);
+    const raw = input.value;
+
+    const results = card.querySelectorAll(".result-item .value");
+
+    if (raw.trim() === "") {
+      input.classList.remove("invalid");
+      errorEl.textContent = "";
+      results.forEach(el => el.textContent = "");
+      return;
+    }
+
+    const validation = validateInput(raw, base);
+
+    if (!validation.valid) {
+      input.classList.add("invalid");
+      errorEl.textContent = validation.message;
+      results.forEach(el => el.textContent = "");
+      return;
+    }
+
+    input.classList.remove("invalid");
+    errorEl.textContent = "";
+
+    const decimalValue = baseStringToBigInt(raw.trim(), base);
+
+    card.querySelectorAll(".result-item").forEach(item => {
+      const targetBase = parseInt(item.dataset.base, 10);
+      const valueEl = item.querySelector(".value");
+      valueEl.textContent = bigIntToBaseString(decimalValue, targetBase);
+    });
+  }
+
+  function renumberCards() {
+    const cards = container.querySelectorAll(".input-card");
+    cards.forEach((card, i) => {
+      card.querySelector(".index-circle").textContent = i + 1;
+      card.querySelector(".badge-label").textContent = "Input #" + (i + 1);
+      card.querySelector(".remove-btn").disabled = cards.length <= MIN_INPUTS;
+    });
+  }
+
+  // ---------- Event delegation ----------
+  container.addEventListener("input", function (e) {
+    const card = e.target.closest(".input-card");
+    if (card) updateRow(card);
+  });
+
+  container.addEventListener("click", function (e) {
+    const segBtn = e.target.closest(".seg-btn");
+    if (segBtn) {
+      const segmented = segBtn.closest(".segmented");
+      segmented.querySelectorAll(".seg-btn").forEach(b => b.classList.remove("active"));
+      segBtn.classList.add("active");
+      segmented.dataset.base = segBtn.dataset.base;
+      updateRow(segBtn.closest(".input-card"));
+      return;
+    }
+
+    const removeBtn = e.target.closest(".remove-btn");
+    if (removeBtn) {
+      if (container.querySelectorAll(".input-card").length <= MIN_INPUTS) return;
+      removeBtn.closest(".input-card").remove();
+      renumberCards();
+      return;
+    }
+
+    const item = e.target.closest(".result-item");
+    if (item) {
+      const valueText = item.querySelector(".value").textContent;
+      if (!valueText) return;
+      navigator.clipboard?.writeText(valueText).then(() => {
+        const tag = item.querySelector(".copied-tag");
+        tag.classList.add("show");
+        setTimeout(() => tag.classList.remove("show"), 900);
+      }).catch(() => {});
+    }
+  });
+
+  addBtn.addEventListener("click", function () {
+    const row = createRow();
+    row.classList.add("card-enter");
+    container.appendChild(row);
+    renumberCards();
+    row.addEventListener("animationend", function () {
+      row.classList.remove("card-enter");
+    }, { once: true });
+  });
+
+  clearBtn.addEventListener("click", function () {
+    container.querySelectorAll(".value-input").forEach(inp => inp.value = "");
+    container.querySelectorAll(".input-card").forEach(card => updateRow(card));
+  });
+
+  // ---------- Initial render (starts at the minimum of 3) ----------
+  for (let i = 0; i < MIN_INPUTS; i++) {
+    container.appendChild(createRow());
+  }
+  renumberCards();
+})();
+</script>
+
+</body>
+</html>
