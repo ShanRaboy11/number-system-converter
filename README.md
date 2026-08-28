@@ -30,11 +30,11 @@ A browser-based number system converter for converting values among binary, octa
 | Decimal | 10 | `0-9` |
 | Hexadecimal | 16 | `0-9`, `A-F`, or `a-f` |
 
-A leading minus sign is accepted for every base. Leading and trailing spaces are removed before validation and conversion.
+A leading minus sign and one radix point (`.`) are accepted for every base. Examples of valid forms include `10.5`, `1010.1`, `2A.8`, `10.`, and `.5`. Leading and trailing spaces are removed before validation and conversion.
 
 ## Algorithm / Pseudocode
 
-The application converts an input in two stages: the source value is converted to a decimal `BigInt`, then that value is converted to each target base.
+The application converts an input in two stages: the source value is converted to an exact rational value using two `BigInt` values, then that rational value is converted to each target base.
 
 ### Main conversion algorithm
 
@@ -63,21 +63,28 @@ When the user types a value or changes its selected base:
         Clear all result fields.
         STOP processing this row.
 
-    Convert the valid source string to a decimal BigInt:
+    Convert the valid source string to an exact rational value:
         Handle a leading '-' separately.
-        Set result = 0.
-        FOR each digit in the input from left to right:
+        Split the input at the radix point.
+        Join the whole and fractional digits.
+        Set numerator = 0.
+        FOR each joined digit from left to right:
             Convert the digit to its numeric value.
-            result = result * source base + digit value.
-        Restore the negative sign if necessary.
+            numerator = numerator * source base + digit value.
+        Set denominator = source base ^ number of fractional digits.
+        Apply the negative sign to the numerator if necessary.
 
     For each target base in [2, 8, 10, 16]:
-        Convert the decimal BigInt to the target base:
-            Return "0" when the value is zero.
-            Handle a negative sign separately.
-            Repeatedly divide the absolute value by the target base.
-            Store each remainder as a digit.
-            Read the remainders in reverse order.
+        Convert the rational value to the target base:
+            Separate the sign and use the absolute numerator.
+            Convert numerator / denominator to the integer part
+            using repeated division and remainders.
+            Set remainder = numerator modulo denominator.
+            WHILE remainder is not zero and fewer than 32 fraction digits exist:
+                Multiply remainder by the target base.
+                The quotient is the next fraction digit.
+                Keep the new remainder after division.
+            Append "..." when the fraction is still repeating after 32 digits.
             Restore the negative sign if necessary.
         Display the converted value.
 
@@ -104,39 +111,29 @@ When Clear Values is clicked:
     Clear every error and result field.
 
 When a result is clicked:
-    Copy its displayed value to the clipboard.
+    Expand the result to its full generated value.
+    Copy the full generated value to the clipboard.
+    Collapse it again if clicked a second time.
     Briefly display "Copied" when copying succeeds.
 ```
 
 ## Flowchart
 
 ```mermaid
-flowchart TD
-    A([Start]) --> B[Create three input rows]
-    B --> C{User action}
-    C -->|Type value or change base| D[Read and trim input]
-    D --> E{Is input empty?}
-    E -->|Yes| F[Clear error and results]
-    F --> C
-    E -->|No| G[Validate digits for selected base]
-    G --> H{Valid input?}
-    H -->|No| I[Show error and clear results]
-    I --> C
-    H -->|Yes| J[Convert source value to decimal BigInt]
-    J --> K[Convert BigInt to bases 2, 8, 10, and 16]
-    K --> L[Display all results]
-    L --> C
-    C -->|Add input| M[Create row and renumber]
-    M --> C
-    C -->|Remove input| N{More than three rows?}
-    N -->|No| C
-    N -->|Yes| O[Remove row and renumber]
-    O --> C
-    C -->|Clear values| P[Clear all rows]
-    P --> C
-    C -->|Click result| Q[Copy result to clipboard]
-    Q --> C
+    A([Start]) --> B[Enter value and select source base]
+    B --> C{Valid input?}
+    C -->|No| D[Show error and clear results]
+    D --> B
+    C -->|Yes| E[Convert to exact rational BigInt]
+    E --> F[Convert to bases 2, 8, 10, and 16]
+    F --> G[Show five-digit fractional previews]
+    G --> H{Result clicked?}
+    H -->|Yes| I[Show full value and copy it]
+    H -->|No| B
+    I --> B
 ```
+
+The `Add Input`, `Remove`, `Clear Values`, and theme controls operate independently of the conversion path. Removing a row uses a brief slide-and-fade animation, and the application always keeps at least three rows.
 
 ## Program Implementation
 
@@ -167,10 +164,10 @@ The `BASE_INFO` object defines the accepted pattern for each base:
 
 ```javascript
 const BASE_INFO = {
-  2:  { name: "Binary",      pattern: /^-?[01]+$/i },
-  8:  { name: "Octal",       pattern: /^-?[0-7]+$/i },
-  10: { name: "Decimal",     pattern: /^-?[0-9]+$/i },
-  16: { name: "Hexadecimal", pattern: /^-?[0-9A-Fa-f]+$/i }
+    2:  { name: "Binary",      pattern: /^-?(?:[01]+(?:\.[01]*)?|\.[01]+)$/i },
+    8:  { name: "Octal",       pattern: /^-?(?:[0-7]+(?:\.[0-7]*)?|\.[0-7]+)$/i },
+    10: { name: "Decimal",     pattern: /^-?(?:[0-9]+(?:\.[0-9]*)?|\.[0-9]+)$/i },
+    16: { name: "Hexadecimal", pattern: /^-?(?:[0-9A-Fa-f]+(?:\.[0-9A-Fa-f]*)?|\.[0-9A-Fa-f]+)$/i }
 };
 ```
 
@@ -178,9 +175,11 @@ The `validateInput()` function rejects characters that are not legal for the sel
 
 ### Conversion implementation
 
-- `baseStringToBigInt(rawValue, base)` converts a string from its selected base into a decimal `BigInt`.
-- `bigIntToBaseString(value, base)` uses repeated division and remainders to produce the target-base string.
-- `BigInt` is used instead of JavaScript `Number`, allowing conversion of integers larger than the normal safe integer limit.
+- `baseStringToRational(rawValue, base)` converts a string from its selected base into an exact `{ numerator, denominator }` rational value.
+- `rationalToBaseString(rational, base)` converts the rational value using integer division and repeated multiplication of the remainder.
+- `BigInt` is used instead of JavaScript `Number`, allowing exact integer and finite-fraction conversion beyond the normal safe integer limit.
+- Results show at most five digits after the radix point in their normal collapsed state.
+- Clicking a result expands it to the full generated value. Repeating output is limited to 32 digits and ends with `...`.
 - The `DIGITS` string, `0123456789ABCDEF`, supplies output symbols for all supported bases.
 - `updateRow()` coordinates validation, conversion, error display, and result rendering.
 
@@ -200,24 +199,16 @@ The following cases can be tested directly in a browser by entering a value, sel
 | 4 | `2A` | 16 | `101010` | `52` | `42` | `2A` | Pass |
 | 5 | `-15` | 10 | `-1111` | `-17` | `-15` | `-F` | Pass |
 | 6 | `0` | 10 | `0` | `0` | `0` | `0` | Pass |
-| 7 | `10201` | 2 | Not generated | Not generated | Not generated | Not generated | Error shown: invalid binary number; allowed digits are `0-1` |
-| 8 | `1G` | 16 | Not generated | Not generated | Not generated | Not generated | Error shown: invalid hexadecimal number; allowed digits are `0-9, A-F` |
-| 9 | `   ` | 10 | Blank | Blank | Blank | Blank | Row is cleared with no error |
-| 10 | `123456789012345678901234567890` | 10 | `11000111011101001000011111111011011000011011100111110000011101110010011100011111` | `10000101011010010` | `123456789012345678901234567890` | `18EE90FF6C373E0EE4E3F0AD2` | Pass; handled with `BigInt` |
+| 7 | `10.5` | 10 | `1010.1` | `12.4` | `10.5` | `A.8` | Pass; fractional input |
+| 8 | `-2A.8` | 16 | `-101010.1` | `-52.4` | `-42.5` | `-2A.8` | Pass; negative fraction |
+| 9 | `10201` | 2 | Blank | Blank | Blank | Blank | Error shown: invalid binary number; results are cleared |
+| 10 | `1G` | 16 | Blank | Blank | Blank | Blank | Error shown: invalid hexadecimal number; results are cleared |
 
-Test 10 demonstrates that the large integer is accepted and converted without `Number` precision loss.
+The invalid-input cases produce blank result fields, not the text `Not generated`.
 
-### Additional UI tests
+The large-integer behavior is covered by the implementation because all arithmetic uses `BigInt`; it can also be checked by entering any integer larger than JavaScript's safe integer limit.
 
-| Test | Action | Expected behavior |
-|---:|---|---|
-| 11 | Load the page | Three input rows appear. Remove buttons are disabled. |
-| 12 | Click `Add Input` | A fourth row appears and row labels are renumbered. |
-| 13 | With four rows, remove one row | The row disappears and remaining labels are renumbered. |
-| 14 | With three rows, click Remove | No row is removed because three is the minimum. |
-| 15 | Enter a valid value, then click `Clear Values` | All input and result fields become blank. |
-| 16 | Click a populated result | The result is copied to the clipboard and `Copied` appears briefly. |
-| 17 | Click the theme button | The interface switches between light and dark themes. |
+The main UI behavior is covered during normal testing: the page starts with three rows, `Add Input` adds a row, `Remove` animates and removes a row only when more than three exist, `Clear Values` clears all rows, and clicking a populated result expands and copies it.
 
 ## Sample Output
 
@@ -274,6 +265,51 @@ Invalid Binary number. Allowed digits: 0-1.
 
 The result fields remain blank until the input is corrected.
 
+### Sample 4: Fractional decimal input
+
+Input:
+
+```text
+Source base: Decimal
+Value: 10.5
+```
+
+Displayed results:
+
+```text
+Binary:      1010.1
+Octal:       12.4
+Decimal:     10.5
+Hexadecimal: A.8
+```
+
+### Sample 5: Long fractional output
+
+Input:
+
+```text
+Source base: Decimal
+Value: 1.123456
+```
+
+Collapsed result preview:
+
+```text
+Decimal: 1.12345...
+```
+
+After clicking the Decimal result, the full finite value is displayed and copied:
+
+```text
+Decimal: 1.123456
+```
+
+For a repeating conversion, the expanded output can look like this:
+
+```text
+Binary: 1.00011001100110011001100110011001...
+```
+
 ## How to Run
 
 1. Open the project folder.
@@ -285,7 +321,8 @@ The result fields remain blank until the input is corrected.
 
 ## Limitations and Notes
 
-- The application converts integer values only; fractional values such as `10.5` are rejected.
+- Fractional values are supported using exact rational arithmetic. Collapsed results show up to five fractional digits and use `...` when more digits exist.
+- Clicking a result expands it to the full generated value, up to 32 fractional digits; repeating values end with `...`.
 - Prefixes such as `0b`, `0o`, and `0x` are not accepted because the validator expects digits only, with an optional leading minus sign.
 - Theme selection follows the browser's current color-scheme preference when the page loads; it is not persisted after the page is closed.
 - Clipboard copying depends on browser permission and support for `navigator.clipboard`.

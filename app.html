@@ -147,9 +147,17 @@
   .input-card.card-enter {
     animation: cardEnter 0.28s ease;
   }
+  .input-card.card-exit {
+    animation: cardExit 0.22s ease forwards;
+    pointer-events: none;
+  }
   @keyframes cardEnter {
     from { opacity: 0; transform: translateY(-8px); }
     to { opacity: 1; transform: translateY(0); }
+  }
+  @keyframes cardExit {
+    from { opacity: 1; transform: translateX(0); max-height: 500px; margin-bottom: 0; }
+    to { opacity: 0; transform: translateX(24px); max-height: 0; margin-bottom: -14px; padding-top: 0; padding-bottom: 0; border-width: 0; }
   }
 
   .input-card-header {
@@ -514,12 +522,14 @@
 
   const DIGITS = "0123456789ABCDEF";
   const BASE_INFO = {
-    2:  { name: "Binary",      pattern: /^-?[01]+$/i },
-    8:  { name: "Octal",       pattern: /^-?[0-7]+$/i },
-    10: { name: "Decimal",     pattern: /^-?[0-9]+$/i },
-    16: { name: "Hexadecimal", pattern: /^-?[0-9A-Fa-f]+$/i }
+    2:  { name: "Binary",      pattern: /^-?(?:[01]+(?:\.[01]*)?|\.[01]+)$/i },
+    8:  { name: "Octal",       pattern: /^-?(?:[0-7]+(?:\.[0-7]*)?|\.[0-7]+)$/i },
+    10: { name: "Decimal",     pattern: /^-?(?:[0-9]+(?:\.[0-9]*)?|\.[0-9]+)$/i },
+    16: { name: "Hexadecimal", pattern: /^-?(?:[0-9A-Fa-f]+(?:\.[0-9A-Fa-f]*)?|\.[0-9A-Fa-f]+)$/i }
   };
   const MIN_INPUTS = 3;
+  const MAX_FRACTION_DIGITS = 32;
+  const DISPLAY_FRACTION_DIGITS = 5;
 
   const container = document.getElementById("inputsContainer");
   const addBtn = document.getElementById("addBtn");
@@ -544,34 +554,65 @@
   });
 
   // ---------- Base conversion helpers (BigInt-safe, arbitrary precision) ----------
-  function baseStringToBigInt(rawValue, base) {
+  function baseStringToRational(rawValue, base) {
     let str = rawValue.trim();
     let negative = false;
     if (str.startsWith("-")) {
       negative = true;
       str = str.slice(1);
     }
-    let result = 0n;
+    const parts = str.split(".");
+    const wholePart = parts[0] || "0";
+    const fractionalPart = parts[1] || "";
     const bigBase = BigInt(base);
-    for (const ch of str) {
+    let numerator = 0n;
+    for (const ch of wholePart + fractionalPart) {
       const digitVal = DIGITS.indexOf(ch.toUpperCase());
-      result = result * bigBase + BigInt(digitVal);
+      numerator = numerator * bigBase + BigInt(digitVal);
     }
-    return negative ? -result : result;
+    const denominator = bigBase ** BigInt(fractionalPart.length);
+    return {
+      numerator: negative ? -numerator : numerator,
+      denominator: denominator
+    };
   }
 
-  function bigIntToBaseString(value, base) {
-    if (value === 0n) return "0";
-    let negative = value < 0n;
-    let n = negative ? -value : value;
+  function rationalToBaseString(rational, base) {
+    let numerator = rational.numerator;
+    const denominator = rational.denominator;
+    if (numerator === 0n) return "0";
+    const negative = numerator < 0n;
+    if (negative) numerator = -numerator;
     const bigBase = BigInt(base);
-    let out = "";
-    while (n > 0n) {
-      const rem = n % bigBase;
-      out = DIGITS[Number(rem)] + out;
-      n = n / bigBase;
+    let integerPart = numerator / denominator;
+    let remainder = numerator % denominator;
+    let integerOutput = "";
+    while (integerPart > 0n) {
+      integerOutput = DIGITS[Number(integerPart % bigBase)] + integerOutput;
+      integerPart = integerPart / bigBase;
     }
-    return negative ? "-" + out : out;
+    if (integerOutput === "") integerOutput = "0";
+
+    let fractionalOutput = "";
+    let digits = 0;
+    while (remainder !== 0n && digits < MAX_FRACTION_DIGITS) {
+      remainder *= bigBase;
+      fractionalOutput += DIGITS[Number(remainder / denominator)];
+      remainder %= denominator;
+      digits++;
+    }
+    if (remainder !== 0n) fractionalOutput += "...";
+
+    const output = fractionalOutput ? integerOutput + "." + fractionalOutput : integerOutput;
+    return negative ? "-" + output : output;
+  }
+
+  function previewBaseString(value) {
+    const pointIndex = value.indexOf(".");
+    if (pointIndex === -1) return value;
+    const fraction = value.slice(pointIndex + 1);
+    if (fraction.length <= DISPLAY_FRACTION_DIGITS) return value;
+    return value.slice(0, pointIndex + 1 + DISPLAY_FRACTION_DIGITS) + "...";
   }
 
   function validateInput(rawValue, base) {
@@ -667,12 +708,15 @@
     input.classList.remove("invalid");
     errorEl.textContent = "";
 
-    const decimalValue = baseStringToBigInt(raw.trim(), base);
+    const rationalValue = baseStringToRational(raw.trim(), base);
 
     card.querySelectorAll(".result-item").forEach(item => {
       const targetBase = parseInt(item.dataset.base, 10);
       const valueEl = item.querySelector(".value");
-      valueEl.textContent = bigIntToBaseString(decimalValue, targetBase);
+      const fullValue = rationalToBaseString(rationalValue, targetBase);
+      item.dataset.fullValue = fullValue;
+      item.classList.remove("expanded");
+      valueEl.textContent = previewBaseString(fullValue);
     });
   }
 
@@ -705,15 +749,23 @@
     const removeBtn = e.target.closest(".remove-btn");
     if (removeBtn) {
       if (container.querySelectorAll(".input-card").length <= MIN_INPUTS) return;
-      removeBtn.closest(".input-card").remove();
-      renumberCards();
+      const card = removeBtn.closest(".input-card");
+      card.classList.add("card-exit");
+      window.setTimeout(function () {
+        card.remove();
+        renumberCards();
+      }, 240);
       return;
     }
 
     const item = e.target.closest(".result-item");
     if (item) {
-      const valueText = item.querySelector(".value").textContent;
+      const valueText = item.dataset.fullValue;
       if (!valueText) return;
+      item.classList.toggle("expanded");
+      item.querySelector(".value").textContent = item.classList.contains("expanded")
+        ? valueText
+        : previewBaseString(valueText);
       navigator.clipboard?.writeText(valueText).then(() => {
         const tag = item.querySelector(".copied-tag");
         tag.classList.add("show");
