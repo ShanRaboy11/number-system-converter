@@ -212,103 +212,37 @@ The main UI behavior is covered during normal testing: the page starts with thre
 
 ## Sample Output
 
+The following screenshots show the application's submitted sample outputs.
+
 ### Sample 1: Decimal input
 
-Input:
+![Decimal input sample](sample-outputs/decimal-input.png)
 
-```text
-Source base: Decimal
-Value: 42
-```
+The screenshot shows three decimal inputs: `2303`, `9480`, and `12503`. The application displays their binary, octal, decimal, and hexadecimal equivalents.
 
-Displayed results:
+### Sample 2: Fractional decimal input
 
-```text
-Binary:      101010
-Octal:       52
-Decimal:     42
-Hexadecimal: 2A
-```
+![Fractional decimal input sample](sample-outputs/fractional-decimal-input.png)
 
-### Sample 2: Hexadecimal input
+The screenshot shows decimal fractional inputs: `97.31`, `53.87`, and `17340.2`. Results with longer fractional representations are shortened with `...` in the collapsed display.
 
-Input:
+### Sample 3: Hexadecimal input
 
-```text
-Source base: Hexadecimal
-Value: 2A
-```
+![Hexadecimal input sample](sample-outputs/hexadecimal-input.png)
 
-Displayed results:
+The screenshot shows hexadecimal inputs: `41AEF`, `21CB02`, and `FF31`. The corresponding decimal results shown are `269039`, `2214658`, and `65329`.
 
-```text
-Binary:      101010
-Octal:       52
-Decimal:     42
-Hexadecimal: 2A
-```
+### Sample 4: Invalid input
 
-### Sample 3: Invalid binary input
+![Invalid input sample](sample-outputs/invalid-input.png)
 
-Input:
-
-```text
-Source base: Binary
-Value: 10201
-```
-
-Displayed validation output:
-
-```text
-Invalid Binary number. Allowed digits: 0-1.
-```
-
-The result fields remain blank until the input is corrected.
-
-### Sample 4: Fractional decimal input
-
-Input:
-
-```text
-Source base: Decimal
-Value: 10.5
-```
-
-Displayed results:
-
-```text
-Binary:      1010.1
-Octal:       12.4
-Decimal:     10.5
-Hexadecimal: A.8
-```
+The screenshot shows invalid values entered with different source bases: Binary `100200194`, Octal `811.478`, and Decimal `AE.7612`. Each row displays the appropriate validation message and leaves the result fields blank.
 
 ### Sample 5: Long fractional output
 
-Input:
+![Long fractional output sample](sample-outputs/long-fractional-output.png)
 
-```text
-Source base: Decimal
-Value: 1.123456
-```
-
-Collapsed result preview:
-
-```text
-Decimal: 1.12345...
-```
-
-After clicking the Decimal result, the full finite value is displayed and copied:
-
-```text
-Decimal: 1.123456
-```
-
-For a repeating conversion, the expanded output can look like this:
-
-```text
-Binary: 1.00011001100110011001100110011001...
-```
+The screenshot shows long fractional values entered using different source bases: decimal `1.157486`, octal `347.021`, and hexadecimal `17FA3.11`. Results that exceed five fractional digits are shortened with `...` in the collapsed display, while shorter results remain fully visible.
 
 ## How to Run
 
