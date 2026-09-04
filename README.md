@@ -1,6 +1,16 @@
-# Number System Converter
+# Number System Converter & Calculator
 
-A browser-based number system converter for converting values among binary, octal, decimal, and hexadecimal representations. The application is implemented as a self-contained HTML file with embedded CSS and JavaScript.
+A browser-based number system converter and arithmetic calculator for working with binary, octal, decimal, and hexadecimal values. It converts a value among all four representations and can also perform an arithmetic operation (addition, subtraction, multiplication, or division) across the entered inputs, showing the result in every base along with a detailed, step-by-step solution. The application is implemented as a self-contained HTML file with embedded CSS and JavaScript.
+
+## Features
+
+- Convert any value among binary, octal, decimal, and hexadecimal in real time.
+- Perform addition, subtraction, multiplication, or division across the inputs, even when they use different bases.
+- Mixed-base arithmetic: each input keeps its own base and is converted to a common representation before the operation is applied.
+- Exact arithmetic using `BigInt` rational values, with no floating-point rounding error.
+- A detailed step-by-step solution: a positional-notation breakdown of each conversion to decimal followed by the final calculation.
+- The arithmetic result is displayed in all four number systems.
+- Clear handling of invalid inputs and division by zero.
 
 ## System Requirements
 
@@ -117,6 +127,54 @@ When a result is clicked:
     Briefly display "Copied" when copying succeeds.
 ```
 
+### Arithmetic operation algorithm
+
+The arithmetic calculator reuses the same conversion inputs. It reads every non-empty input, converts each value to an exact rational, applies the selected operation left to right, and reports the result in all four bases.
+
+```text
+When an operation is selected:
+    Record the chosen operation (+, -, *, or /).
+
+When Calculate is clicked:
+    Collect every non-empty input row in order.
+    FOR each collected input:
+        Validate the value against its selected base.
+        IF validation fails:
+            Show an error naming the input number.
+            STOP.
+        Convert the value to an exact rational (numerator, denominator).
+
+    IF fewer than two valid values were collected:
+        Show a message asking for at least two values.
+        STOP.
+
+    Set accumulator = rational of the first input.
+    FOR each remaining input value:
+        Combine accumulator and the next value using the operation:
+            Addition       -> a/b + c/d
+            Subtraction    -> a/b - c/d
+            Multiplication -> a/b * c/d
+            Division       -> a/b / c/d
+        IF the operation is division and the next value is zero:
+            Show a division-by-zero error.
+            STOP.
+        Reduce the result to lowest terms.
+        accumulator = combined result.
+
+    Build the expression from the original inputs and their base subscripts.
+
+    Build the step-by-step solution:
+        FOR each input:
+            IF it is decimal, note "Already in decimal".
+            ELSE show a positional-notation breakdown:
+                (digit x base^position) + ... on one line,
+                the positional values on the next line,
+                and the decimal value in its own column.
+        Show the final calculation using the decimal values.
+
+    Display the accumulator in bases 2, 8, 10, and 16.
+```
+
 ## Flowchart
 
 ```mermaid
@@ -131,9 +189,19 @@ When a result is clicked:
     H -->|Yes| I[Show full value and copy it]
     H -->|No| B
     I --> B
+    G --> J{Operation selected and Calculate clicked?}
+    J -->|No| B
+    J -->|Yes| K[Collect and validate all inputs]
+    K --> L{At least two valid values?}
+    L -->|No| M[Show message and stop]
+    L -->|Yes| N[Apply operation left to right on rationals]
+    N --> O{Division by zero?}
+    O -->|Yes| P[Show division-by-zero error]
+    O -->|No| Q[Show expression, step-by-step solution, and result in all four bases]
+    Q --> B
 ```
 
-The `Add Input`, `Remove`, `Clear Values`, and theme controls operate independently of the conversion path. Removing a row uses a brief slide-and-fade animation, and the application always keeps at least three rows.
+The `Add Input`, `Remove`, `Clear Values`, and theme controls operate independently of the conversion path. Removing a row uses a brief slide-and-fade animation, and the application always keeps at least three rows. The operation selector and `Calculate` button drive the arithmetic path, which reads the same input rows.
 
 ## Program Implementation
 
@@ -157,6 +225,8 @@ The interface is contained in `app.html` and includes:
 - Base selector buttons: `BIN`, `OCT`, `DEC`, and `HEX`.
 - Four result fields per row.
 - `Add Input`, `Remove`, and `Clear Values` controls.
+- An operation selector (`Add`, `Subtract`, `Multiply`, `Divide`) and a `Calculate` button.
+- A result panel showing the arithmetic expression, a step-by-step solution table, and the result in all four bases.
 
 ### Validation implementation
 
@@ -183,9 +253,20 @@ The `validateInput()` function rejects characters that are not legal for the sel
 - The `DIGITS` string, `0123456789ABCDEF`, supplies output symbols for all supported bases.
 - `updateRow()` coordinates validation, conversion, error display, and result rendering.
 
+### Arithmetic implementation
+
+- The arithmetic feature operates on the same conversion input rows, so each operand keeps its own base.
+- `collectOperands()` reads every non-empty row in order, validates it, and stores its exact rational value.
+- `computeRational(a, b, op)` performs one operation on two rational values; addition, subtraction, multiplication, and division are each expressed as exact fraction arithmetic. Division by zero returns a null result that is reported to the user.
+- `reduceRational()` divides the numerator and denominator by their greatest common divisor (`gcd()`) so results stay in lowest terms.
+- The selected operation is applied left to right across all operands, so three or more inputs are chained (for example `a - b - c`).
+- `conversionBreakdown()` builds the positional-notation expansion for a value, for example `(4 x 8^2) + (2 x 8^1) + (1 x 8^0)` with the positional values on the line below. `superscript()` renders the exponents as Unicode superscripts, including negative exponents for fractional digits.
+- The expression and result use the base number itself as a subscript, for example `1011(2) + 123(10) = 134(10)`.
+- `performArithmetic()` coordinates collection, validation, computation, expression rendering, the solution table, and the four-base result tiles.
+
 ### Event handling
 
-The program uses event delegation on the input container. This allows input, base-selection, result-copy, and remove actions to work for rows created after the initial page load.
+The program uses event delegation on the input container. This allows input, base-selection, result-copy, and remove actions to work for rows created after the initial page load. The operation selector and `Calculate` button have their own handlers that read the current input rows when the user calculates.
 
 ## Test Cases
 
@@ -209,6 +290,23 @@ The invalid-input cases produce blank result fields, not the text `Not generated
 The large-integer behavior is covered by the implementation because all arithmetic uses `BigInt`; it can also be checked by entering any integer larger than JavaScript's safe integer limit.
 
 The main UI behavior is covered during normal testing: the page starts with three rows, `Add Input` adds a row, `Remove` animates and removes a row only when more than three exist, `Clear Values` clears all rows, and clicking a populated result expands and copies it.
+
+### Arithmetic test cases
+
+The following cases can be tested by entering the listed values in the input rows, selecting each source base, choosing the operation, and clicking `Calculate`.
+
+| Test | Inputs (value @ base) | Operation | Expected decimal result | Expected binary | Expected octal | Expected hexadecimal | Result |
+|---:|---|---|---:|---|---|---|---|
+| A1 | `1011`@2, `123`@10 | Add | `134` | `10000110` | `206` | `86` | Pass; mixed-base addition |
+| A2 | `10`@10, `20`@10, `30`@10 | Add | `60` | `111100` | `74` | `3C` | Pass; chained across three inputs |
+| A3 | `FF`@16, `1`@10, `10`@8 | Subtract | `246` | `11110110` | `366` | `F6` | Pass; left-to-right subtraction |
+| A4 | `2`@10, `1010`@2, `A`@16 | Multiply | `200` | `11001000` | `310` | `C8` | Pass; mixed-base multiplication |
+| A5 | `100`@10, `4`@10, `5`@10 | Divide | `5` | `101` | `5` | `5` | Pass; chained division |
+| A6 | `10`@10, `4`@10 | Divide | `2.5` | `10.1` | `2.4` | `2.8` | Pass; exact fractional result |
+| A7 | `5`@10, `0`@10 | Divide | — | — | — | — | Error shown: cannot divide by zero |
+| A8 | `1011`@2 only | Add | — | — | — | — | Message shown: at least two values required |
+
+The step-by-step solution for each case shows the positional-notation breakdown of every non-decimal input and the final calculation using the converted decimal values.
 
 ## Sample Output
 
@@ -253,10 +351,20 @@ The screenshot shows long fractional values entered using different source bases
 5. Read the four generated representations.
 6. Click a result to copy it when needed.
 
+To use the arithmetic calculator:
+
+1. Enter two or more values in the input rows, each with its own base.
+2. Choose an operation: `Add`, `Subtract`, `Multiply`, or `Divide`.
+3. Click `Calculate`.
+4. Read the expression, the step-by-step solution, and the result shown in all four bases.
+
 ## Limitations and Notes
 
 - Fractional values are supported using exact rational arithmetic. Collapsed results show up to five fractional digits and use `...` when more digits exist.
 - Clicking a result expands it to the full generated value, up to 32 fractional digits; repeating values end with `...`.
+- The arithmetic calculator applies the selected operation left to right across every non-empty input, so three or more inputs are chained (for example `a - b - c`).
+- Arithmetic uses the same exact `BigInt` rational arithmetic as the converter, so results are exact; a repeating result (such as `1 / 3`) is shown to 32 fractional digits ending with `...`.
+- Division by zero is reported as an error and produces no result. At least two valid inputs are required to calculate.
 - Prefixes such as `0b`, `0o`, and `0x` are not accepted because the validator expects digits only, with an optional leading minus sign.
 - Theme selection follows the browser's current color-scheme preference when the page loads; it is not persisted after the page is closed.
 - Clipboard copying depends on browser permission and support for `navigator.clipboard`.
