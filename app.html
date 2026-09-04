@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Number System Converter</title>
+<title>Number System Converter &amp; Calculator</title>
 <style>
   :root {
     --bg: #eef2fb;
@@ -464,6 +464,216 @@
   .index-circle { border-radius: 6px; }
   .add-input-btn { border-radius: 8px; background: rgba(255, 255, 255, 0.42); }
 
+  /* ---------- Arithmetic section ---------- */
+  .arith-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    padding: 20px;
+    margin-top: 18px;
+    backdrop-filter: blur(5px);
+  }
+
+  /* Operation bar sits directly under the inputs, no separate operand fields */
+  .op-bar {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    padding: 16px 20px 18px;
+    margin-top: 14px;
+    backdrop-filter: blur(5px);
+  }
+  .op-bar .operand-label { margin-bottom: 10px; }
+  .op-row {
+    display: flex;
+    align-items: stretch;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+  .op-row .op-grid { flex: 1; min-width: 260px; }
+  .op-row .btn-solid {
+    flex-shrink: 0;
+    padding: 0 26px;
+    font-size: 0.95rem;
+  }
+
+  .operand-label {
+    display: block;
+    font-size: 0.67rem;
+    text-transform: uppercase;
+    letter-spacing: 0.6px;
+    color: var(--text-muted);
+    font-weight: 700;
+    margin-bottom: 7px;
+  }
+
+  /* Operation selector: labeled cards (symbol + word) */
+  .op-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 10px;
+  }
+  .op-btn {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    background: var(--surface-alt);
+    border: 1px solid var(--border);
+    color: var(--text-muted);
+    padding: 12px 8px;
+    border-radius: 9px;
+    transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease, transform 0.1s ease;
+  }
+  .op-btn .op-sym { font-size: 1.3rem; font-weight: 700; line-height: 1; }
+  .op-btn .op-word { font-size: 0.72rem; font-weight: 700; letter-spacing: 0.5px; text-transform: uppercase; }
+  .op-btn:not(.active):hover { border-color: var(--accent); color: var(--accent); }
+  .op-btn.active {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: #fff;
+    box-shadow: var(--shadow);
+  }
+
+  .btn-solid {
+    background: var(--accent);
+    color: #fff;
+  }
+  .btn-solid:hover:not(:disabled) { background: var(--accent-hover); }
+
+  .arith-error {
+    color: var(--error);
+    font-size: 0.82rem;
+    font-weight: 500;
+    min-height: 18px;
+    margin-top: 12px;
+  }
+
+  .arith-output {
+    margin-top: 18px;
+    display: none;
+  }
+  .arith-output.show { display: block; }
+
+  .output-heading {
+    font-family: Georgia, "Times New Roman", serif;
+    font-size: 1.15rem;
+    font-weight: 700;
+    margin-bottom: 14px;
+  }
+  .output-subhead {
+    margin: 30px 0 12px;
+    color: var(--text-muted);
+    font-size: 0.72rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+  }
+
+  .expression {
+    font-family: 'Consolas', 'Courier New', monospace;
+    font-size: 1.05rem;
+    font-weight: 700;
+    color: var(--text);
+    background: var(--accent-soft);
+    border: 1px solid var(--accent-soft-strong);
+    border-radius: 8px;
+    padding: 14px 16px;
+    word-break: break-all;
+    line-height: 1.7;
+  }
+  .expression .eq { color: var(--accent); margin: 0 8px; }
+  .base-tag {
+    font-size: 0.68em;
+    font-weight: 700;
+    color: var(--accent);
+    vertical-align: sub;
+    margin-left: 1px;
+  }
+
+  /* Detailed step-by-step solution */
+  .solution {
+    background: var(--surface-alt);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 22px 24px;
+    margin-bottom: 8px;
+  }
+  .sol-title {
+    margin: 0 0 14px;
+    font-family: Georgia, "Times New Roman", serif;
+    font-size: 1.05rem;
+    font-weight: 700;
+    color: var(--text);
+  }
+  .sol-title:not(:first-child) { margin-top: 30px; }
+
+  .sol-table-wrap { overflow-x: auto; }
+  .sol-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.86rem;
+    text-align: center;
+  }
+  .sol-table th {
+    text-align: center;
+    padding: 10px 12px;
+    font-family: "Trebuchet MS", "Segoe UI", sans-serif;
+    font-size: 0.66rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--text-muted);
+    border-bottom: 1px solid var(--border);
+    white-space: nowrap;
+  }
+  .sol-table td {
+    padding: 12px;
+    vertical-align: middle;
+    text-align: center;
+    border-bottom: 1px solid var(--border);
+  }
+  .sol-table tbody tr:last-child td { border-bottom: none; }
+  .sol-table .c-orig {
+    font-family: 'Consolas', 'Courier New', monospace;
+    font-weight: 700;
+    color: var(--text);
+    white-space: nowrap;
+  }
+  .sol-table .c-base { color: var(--text-muted); white-space: nowrap; }
+  .sol-table .c-break {
+    font-family: 'Consolas', 'Courier New', monospace;
+    color: var(--text);
+    line-height: 1.7;
+    min-width: 240px;
+  }
+  .sol-table .c-break .break-terms { display: block; }
+  .sol-table .c-break .break-sums { display: block; color: var(--text-muted); margin-top: 2px; }
+  .sol-table .c-dec {
+    font-family: 'Consolas', 'Courier New', monospace;
+    font-weight: 700;
+    color: var(--accent);
+    white-space: nowrap;
+  }
+  .sol-note { color: var(--text-muted); font-style: italic; }
+
+  .sol-final {
+    text-align: center;
+    font-family: 'Consolas', 'Courier New', monospace;
+    font-size: 1.05rem;
+    color: var(--text);
+    padding: 8px 4px;
+    word-break: break-all;
+    line-height: 1.6;
+  }
+  .sol-final strong { color: var(--accent); font-size: 1.15rem; }
+
+  /* Roomier result tiles in the arithmetic panel only */
+  #arithResults { margin-top: 12px; }
+
   @media (max-width: 680px) {
     header { padding: 25px 18px 18px; flex-wrap: wrap; gap: 22px; }
     .header-actions { width: 100%; justify-content: space-between; }
@@ -471,6 +681,7 @@
     main { padding: 0 18px 38px; }
     .intro-band { display: block; }
     .intro-band p { max-width: none; }
+    .op-grid { grid-template-columns: repeat(2, 1fr); }
   }
 </style>
 </head>
@@ -478,8 +689,8 @@
 
 <header>
   <div class="brand">
-    <h1>Number System Converter</h1>
-    <p>Binary &middot; Octal &middot; Decimal &middot; Hexadecimal</p>
+    <h1>Number System Converter &amp; Calculator</h1>
+    <p>Convert &amp; Compute &middot; Binary &middot; Octal &middot; Decimal &middot; Hexadecimal</p>
   </div>
   <div class="header-actions">
     <div class="student-meta" aria-label="Student information">
@@ -496,9 +707,9 @@
   <section class="intro-band" aria-labelledby="workspace-title">
     <div>
       <p class="section-kicker">Computer Architecture and Organization</p>
-      <h2 id="workspace-title">Number Systems.</h2>
+      <h2 id="workspace-title">Convert &amp; Calculate.</h2>
     </div>
-    <p>Enter a value, choose its base, and read every equivalent representation at a glance.</p>
+    <p>Enter values in any base to see every equivalent representation, then choose an operation to add, subtract, multiply, or divide across them.</p>
   </section>
   <div class="toolbar">
     <button class="btn-ghost" id="clearBtn">Clear Values</button>
@@ -513,6 +724,57 @@
     </svg>
     Add Input
   </button>
+
+  <div class="op-bar">
+    <span class="operand-label">Operation</span>
+    <div class="op-row">
+      <div class="op-grid" id="opSelect" data-op="+">
+        <button type="button" class="op-btn active" data-op="+">
+          <span class="op-sym">+</span><span class="op-word">Add</span>
+        </button>
+        <button type="button" class="op-btn" data-op="-">
+          <span class="op-sym">&minus;</span><span class="op-word">Subtract</span>
+        </button>
+        <button type="button" class="op-btn" data-op="*">
+          <span class="op-sym">&times;</span><span class="op-word">Multiply</span>
+        </button>
+        <button type="button" class="op-btn" data-op="/">
+          <span class="op-sym">&divide;</span><span class="op-word">Divide</span>
+        </button>
+      </div>
+      <button class="btn-solid" id="computeBtn">Calculate</button>
+    </div>
+  </div>
+
+  <div class="arith-error" id="arithError"></div>
+
+  <div class="arith-card arith-output" id="arithOutput">
+    <div class="output-heading">Result</div>
+    <div class="expression" id="arithExpression"></div>
+
+    <p class="output-subhead">Step-by-step solution</p>
+    <div class="solution" id="arithSolution"></div>
+
+    <p class="output-subhead">Result in every number system</p>
+    <div class="results-grid" id="arithResults">
+      <div class="result-item" data-base="2">
+        <span class="copied-tag">Copied</span>
+        <span class="label">Binary</span><span class="value"></span>
+      </div>
+      <div class="result-item" data-base="8">
+        <span class="copied-tag">Copied</span>
+        <span class="label">Octal</span><span class="value"></span>
+      </div>
+      <div class="result-item" data-base="10">
+        <span class="copied-tag">Copied</span>
+        <span class="label">Decimal</span><span class="value"></span>
+      </div>
+      <div class="result-item" data-base="16">
+        <span class="copied-tag">Copied</span>
+        <span class="label">Hexadecimal</span><span class="value"></span>
+      </div>
+    </div>
+  </div>
 </main>
 
 
@@ -613,6 +875,56 @@
     const fraction = value.slice(pointIndex + 1);
     if (fraction.length <= DISPLAY_FRACTION_DIGITS) return value;
     return value.slice(0, pointIndex + 1 + DISPLAY_FRACTION_DIGITS) + "...";
+  }
+
+  // ---------- Rational arithmetic (exact, BigInt fractions) ----------
+  function gcd(a, b) {
+    a = a < 0n ? -a : a;
+    b = b < 0n ? -b : b;
+    while (b) {
+      [a, b] = [b, a % b];
+    }
+    return a;
+  }
+
+  function reduceRational(r) {
+    let { numerator, denominator } = r;
+    if (denominator < 0n) {
+      numerator = -numerator;
+      denominator = -denominator;
+    }
+    if (numerator === 0n) return { numerator: 0n, denominator: 1n };
+    const divisor = gcd(numerator, denominator);
+    return { numerator: numerator / divisor, denominator: denominator / divisor };
+  }
+
+  function computeRational(a, b, op) {
+    let result;
+    if (op === "+") {
+      result = {
+        numerator: a.numerator * b.denominator + b.numerator * a.denominator,
+        denominator: a.denominator * b.denominator
+      };
+    } else if (op === "-") {
+      result = {
+        numerator: a.numerator * b.denominator - b.numerator * a.denominator,
+        denominator: a.denominator * b.denominator
+      };
+    } else if (op === "*") {
+      result = {
+        numerator: a.numerator * b.numerator,
+        denominator: a.denominator * b.denominator
+      };
+    } else if (op === "/") {
+      if (b.numerator === 0n) return null; // division by zero
+      result = {
+        numerator: a.numerator * b.denominator,
+        denominator: a.denominator * b.numerator
+      };
+    } else {
+      return null;
+    }
+    return reduceRational(result);
   }
 
   function validateInput(rawValue, base) {
@@ -787,6 +1099,234 @@
   clearBtn.addEventListener("click", function () {
     container.querySelectorAll(".value-input").forEach(inp => inp.value = "");
     container.querySelectorAll(".input-card").forEach(card => updateRow(card));
+  });
+
+  // ---------- Arithmetic section (operates on the conversion inputs above) ----------
+  const opSelect = document.getElementById("opSelect");
+  const computeBtn = document.getElementById("computeBtn");
+  const arithError = document.getElementById("arithError");
+  const arithOutput = document.getElementById("arithOutput");
+  const arithExpression = document.getElementById("arithExpression");
+  const arithSolution = document.getElementById("arithSolution");
+  const arithResults = document.getElementById("arithResults");
+
+  const OP_SYMBOL = { "+": "+", "-": "\u2212", "*": "\u00D7", "/": "\u00F7" };
+  const OP_WORD = { "+": "Addition", "-": "Subtraction", "*": "Multiplication", "/": "Division" };
+
+  function escapeHtml(str) {
+    return str.replace(/[&<>"']/g, function (c) {
+      return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c];
+    });
+  }
+
+  // Base subscript uses the actual base number (2, 8, 10, 16).
+  function baseTagHtml(base) {
+    return '<span class="base-tag">' + base + '</span>';
+  }
+  // Value with its base subscript, e.g. 1011(2).
+  function tagged(valueStr, base) {
+    return escapeHtml(valueStr) + baseTagHtml(base);
+  }
+
+  // Render an exponent as a Unicode superscript (handles negatives, e.g. 8^-1).
+  const SUP_MAP = { "-": "\u207B", "0": "\u2070", "1": "\u00B9", "2": "\u00B2", "3": "\u00B3",
+    "4": "\u2074", "5": "\u2075", "6": "\u2076", "7": "\u2077", "8": "\u2078", "9": "\u2079" };
+  function superscript(exp) {
+    return String(exp).split("").map(ch => SUP_MAP[ch] || ch).join("");
+  }
+
+  // Format a decimal string trimmed of trailing zeros (keeps exactness for our cases).
+  function trimDecimal(str) {
+    if (str.indexOf(".") === -1) return str;
+    return str.replace(/0+$/, "").replace(/\.$/, "");
+  }
+
+  // Build the positional-notation breakdown for one value, e.g.
+  // (4 x 8^2) + (2 x 8^1) + (1 x 8^0) = 256 + 16 + 1  ->  273
+  // Returns { terms, sums, decimal } as display strings, or null if base is 10.
+  function conversionBreakdown(rawValue, base) {
+    let str = rawValue.trim();
+    let negative = false;
+    if (str.startsWith("-")) { negative = true; str = str.slice(1); }
+    const parts = str.split(".");
+    const wholePart = parts[0] || "0";
+    const fractionalPart = parts[1] || "";
+    const digits = (wholePart + fractionalPart).split("");
+
+    const termStrs = [];
+    const sumStrs = [];
+    // Highest whole-number exponent = (number of whole digits - 1).
+    let exponent = wholePart.length - 1;
+
+    for (const ch of digits) {
+      const digitVal = DIGITS.indexOf(ch.toUpperCase());
+      // Positional value = digitVal * base^exponent, computed exactly as a rational.
+      let posRational;
+      if (exponent >= 0) {
+        posRational = { numerator: BigInt(digitVal) * (BigInt(base) ** BigInt(exponent)), denominator: 1n };
+      } else {
+        posRational = { numerator: BigInt(digitVal), denominator: BigInt(base) ** BigInt(-exponent) };
+      }
+      const posDecimal = trimDecimal(rationalToBaseString(reduceRational(posRational), 10));
+      termStrs.push("(" + digitVal + " \u00D7 " + base + superscript(exponent) + ")");
+      sumStrs.push(posDecimal);
+      exponent--;
+    }
+
+    const decimal = trimDecimal(rationalToBaseString(baseStringToRational(rawValue, base), 10));
+    return {
+      terms: termStrs.join(" + "),
+      sums: sumStrs.join(" + "),
+      decimal: negative ? decimal : decimal
+    };
+  }
+
+  function showArithError(msg) {
+    arithError.textContent = msg;
+    arithOutput.classList.remove("show");
+  }
+
+  // Operation selector.
+  opSelect.addEventListener("click", function (e) {
+    const btn = e.target.closest(".op-btn");
+    if (!btn) return;
+    opSelect.querySelectorAll(".op-btn").forEach(b => b.classList.remove("active"));
+    btn.classList.add("active");
+    opSelect.dataset.op = btn.dataset.op;
+  });
+
+  // Gather every conversion input card that has a value; validate as we go.
+  function collectOperands() {
+    const operands = [];
+    const cards = container.querySelectorAll(".input-card");
+    for (let i = 0; i < cards.length; i++) {
+      const card = cards[i];
+      const base = parseInt(card.querySelector(".segmented").dataset.base, 10);
+      const raw = card.querySelector(".value-input").value.trim();
+      if (raw === "") continue; // skip empty cards
+      const check = validateInput(raw, base);
+      if (!check.valid) {
+        return { error: "Input #" + (i + 1) + ": " + check.message };
+      }
+      operands.push({ index: i + 1, raw: raw, base: base, rational: baseStringToRational(raw, base) });
+    }
+    return { operands: operands };
+  }
+
+  function performArithmetic() {
+    const op = opSelect.dataset.op;
+    const collected = collectOperands();
+
+    // Decision structure: surface any invalid input first.
+    if (collected.error) {
+      showArithError(collected.error);
+      return;
+    }
+    const operands = collected.operands;
+    if (operands.length < 2) {
+      showArithError("Enter at least two values in the inputs above to calculate.");
+      return;
+    }
+
+    // Chain the operation left-to-right across all operands.
+    let acc = operands[0].rational;
+
+    for (let i = 1; i < operands.length; i++) {
+      const next = operands[i];
+      acc = computeRational(acc, next.rational, op);
+      if (acc === null) {
+        showArithError("Cannot divide by zero (Input #" + next.index + " is zero). Division is undefined.");
+        return;
+      }
+    }
+
+    const result = acc;
+    arithError.textContent = "";
+
+    // Expression using the ORIGINAL input values with base-number subscripts.
+    let exprHtml = "";
+    operands.forEach(function (o, i) {
+      if (i > 0) exprHtml += '<span class="eq">' + OP_SYMBOL[op] + '</span>';
+      exprHtml += tagged(o.raw, o.base);
+    });
+    exprHtml += '<span class="eq">=</span>' + tagged(rationalToBaseString(result, 10), 10);
+    arithExpression.innerHTML = exprHtml;
+
+    // ----- Detailed step-by-step solution -----
+
+    // Part 1: conversion-to-decimal table (one row per input).
+    let rowsHtml = "";
+    operands.forEach(function (o) {
+      const decimal = trimDecimal(rationalToBaseString(o.rational, 10));
+      let breakdownCell;
+      if (o.base === 10) {
+        breakdownCell = '<em class="sol-note">Already in decimal</em>';
+      } else {
+        const bd = conversionBreakdown(o.raw, o.base);
+        breakdownCell = '<span class="break-terms">' + bd.terms + '</span>' +
+                        '<span class="break-sums">' + bd.sums + '</span>';
+      }
+      rowsHtml +=
+        '<tr>' +
+          '<td class="c-orig">' + tagged(o.raw, o.base) + '</td>' +
+          '<td class="c-base">' + BASE_INFO[o.base].name + '</td>' +
+          '<td class="c-break">' + breakdownCell + '</td>' +
+          '<td class="c-dec">' + escapeHtml(decimal) + '</td>' +
+        '</tr>';
+    });
+
+    const tableHtml =
+      '<h4 class="sol-title">Step-by-Step Conversion to Decimal</h4>' +
+      '<div class="sol-table-wrap"><table class="sol-table">' +
+        '<thead><tr>' +
+          '<th>Original Number</th><th>Base</th>' +
+          '<th>Conversion Breakdown</th><th>Decimal Value</th>' +
+        '</tr></thead>' +
+        '<tbody>' + rowsHtml + '</tbody>' +
+      '</table></div>';
+
+    // Part 2: the final calculation line, using the converted decimal values.
+    const decimalTerms = operands.map(o => trimDecimal(rationalToBaseString(o.rational, 10)));
+    const finalLine =
+      decimalTerms.join(" " + OP_SYMBOL[op] + " ") +
+      " = <strong>" + escapeHtml(trimDecimal(rationalToBaseString(result, 10))) + "</strong>";
+
+    const finalHtml =
+      '<h4 class="sol-title">Final Calculation (' + OP_WORD[op] + ')</h4>' +
+      '<div class="sol-final">' + finalLine + '</div>';
+
+    arithSolution.innerHTML = tableHtml + finalHtml;
+
+    // Final result in all four number systems.
+    arithResults.querySelectorAll(".result-item").forEach(function (item) {
+      const targetBase = parseInt(item.dataset.base, 10);
+      const valueEl = item.querySelector(".value");
+      const fullValue = rationalToBaseString(result, targetBase);
+      item.dataset.fullValue = fullValue;
+      item.classList.remove("expanded");
+      valueEl.textContent = previewBaseString(fullValue);
+    });
+
+    arithOutput.classList.add("show");
+  }
+
+  computeBtn.addEventListener("click", performArithmetic);
+
+  // Copy / expand behaviour for arithmetic result items (mirrors converter rows)
+  arithResults.addEventListener("click", function (e) {
+    const item = e.target.closest(".result-item");
+    if (!item) return;
+    const valueText = item.dataset.fullValue;
+    if (!valueText) return;
+    item.classList.toggle("expanded");
+    item.querySelector(".value").textContent = item.classList.contains("expanded")
+      ? valueText
+      : previewBaseString(valueText);
+    navigator.clipboard?.writeText(valueText).then(() => {
+      const tag = item.querySelector(".copied-tag");
+      tag.classList.add("show");
+      setTimeout(() => tag.classList.remove("show"), 900);
+    }).catch(() => {});
   });
 
   // ---------- Initial render (starts at the minimum of 3) ----------
