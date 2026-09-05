@@ -177,29 +177,8 @@ When Calculate is clicked:
 
 ## Flowchart
 
-```mermaid
-    A([Start]) --> B[Enter value and select source base]
-    B --> C{Valid input?}
-    C -->|No| D[Show error and clear results]
-    D --> B
-    C -->|Yes| E[Convert to exact rational BigInt]
-    E --> F[Convert to bases 2, 8, 10, and 16]
-    F --> G[Show five-digit fractional previews]
-    G --> H{Result clicked?}
-    H -->|Yes| I[Show full value and copy it]
-    H -->|No| B
-    I --> B
-    G --> J{Operation selected and Calculate clicked?}
-    J -->|No| B
-    J -->|Yes| K[Collect and validate all inputs]
-    K --> L{At least two valid values?}
-    L -->|No| M[Show message and stop]
-    L -->|Yes| N[Apply operation left to right on rationals]
-    N --> O{Division by zero?}
-    O -->|Yes| P[Show division-by-zero error]
-    O -->|No| Q[Show expression, step-by-step solution, and result in all four bases]
-    Q --> B
-```
+![Application flowchart](sample-outputs/flowchart.jpg)
+
 
 The `Add Input`, `Remove`, `Clear Values`, and theme controls operate independently of the conversion path. Removing a row uses a brief slide-and-fade animation, and the application always keeps at least three rows. The operation selector and `Calculate` button drive the arithmetic path, which reads the same input rows.
 
